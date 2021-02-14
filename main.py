@@ -19,7 +19,7 @@ app.logger.addHandler(file_handler)
 
 con = connect(database='wodapp', user='wodserver')
 
-def execute_query(q, params):
+def execute_query(q, params=()):
     with con.cursor() as cur:
         cur.execute(q, params)
         return cur.fetchall()
@@ -52,11 +52,32 @@ def update(cid):
     )
     return response 
 
+@app.route('/athletes')
+def athletes():
+    result = execute_query("select id, first_name, last_name from athletes")
+    if result:
+        athletes = [{"athlete_id" : athlete.id, "first_name" : athlete.first_name, "last_name" : athlete.last_name} for athlete in result]
+    else:
+        athletes = []
+    response = app.response_class(
+        response=json.dumps(athletes),
+        status=200,
+        mimetype='application/json'
+    )
+    return response 
+
 @app.route('/wod')
 def wod():
-    date = '2021-02-09'
+    try:
+        date = request.args.get('date')
+    except Exception:
+        date = dt.strftime(dt.now(), "%Y-%m-%d")
+    #date = '2021-02-09'
     result = execute_query("select workout_info from program natural join workouts where workout_date = %s", (date,))
-    workout_info = result[0].workout_info 
+    if result:
+        workout_info = result[0].workout_info 
+    else:
+        workout_info = {}
     response = app.response_class(
         response=json.dumps(workout_info),
         status=200,
