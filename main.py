@@ -4,6 +4,7 @@ from datetime import datetime as dt
 import threading
 import threading
 import logging
+import json
 import os
 from pgdb import connect
 
@@ -19,42 +20,53 @@ app.logger.addHandler(file_handler)
 
 con = connect(database='wodapp', user='wodserver')
 
-def execute_query(q, params=()):
+def execute_read_query(q, params=()):
     with con.cursor() as cur:
         cur.execute(q, params)
         return cur.fetchall()
 
-score_data = [{'cid' : 1, 'cname': 'Prateek','wid' : 1,
-    'score' : '12:09',
-    'notes' : '10lb DB'}, {'cid' : 2, 'cname' : 'Ritu', 'wid' : 1,
-    'score' : '11:12',
-    'notes' : '15lb DB'}]
+def execute_write_query(q, params=()):
+    try:
+        with con.cursor() as cur:
+            result = cur.execute(q, params)
+            con.commit()
+        return True
+    except Exception as e:
+        app.logger.error(e) 
+        return False
 
 @app.before_first_request
 def activate_job():
-    #app.logger.info("Loading data for %s" % today)
-    #load_data()
     pass
 
 def write_customer_score(data):
     app.logger.info(data)
-    score_data.append(data)
+    program_id = data['program_id']
+    athlete_id = data['athlete_id']
+    score = data['score']
+    notes = data['notes'] or ''
+    scaled_wod = data['scaled_wod']
+    is_rx = (scaled_wod == None)
+    print("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, '%s', '%s', %s, '%s')" % (program_id, athlete_id, score, notes, is_rx, json.dumps(scaled_wod)))
+    is_successful = execute_write_query("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, %s, %s, %s, %s)", (program_id, athlete_id, score, notes, is_rx, json.dumps(scaled_wod)))
+    return is_successful
 
 @app.route('/customers/<cid>', methods=['POST'])
 def update(cid):
     data = request.json
     app.logger.info("Putting data for %s" % cid)
-    write_customer_score(data)
+    is_successful = write_customer_score(data)
+    status = 201 if is_successful else 500
     response = app.response_class(
         response=json.dumps({}),
-        status=201,
+        status=status,
         mimetype='application/json'
     )
     return response 
 
 @app.route('/athletes')
 def athletes():
-    result = execute_query("select id, first_name, last_name from athletes")
+    result = execute_read_query("select id, first_name, last_name from athletes")
     if result:
         athletes = [{"athlete_id" : athlete.id, "first_name" : athlete.first_name, "last_name" : athlete.last_name} for athlete in result]
     else:
@@ -72,12 +84,13 @@ def wod():
         date = request.args.get('date')
     except Exception:
         date = dt.strftime(dt.now(), "%Y-%m-%d")
-    #date = '2021-02-09'
-    result = execute_query("select workout_info from program natural join workouts where workout_date = %s", (date,))
+
+    result = execute_read_query("select workout_info from program natural join workouts where workout_date = %s", (date,))
     if result:
         workout_info = result[0].workout_info 
     else:
         workout_info = {}
+
     response = app.response_class(
         response=json.dumps(workout_info),
         status=200,
@@ -87,8 +100,15 @@ def wod():
 
 @app.route('/scores')
 def scores():
+    try:
+        date = request.args.get('date')
+    except Exception:
+        date = dt.strftime(dt.now(), "%Y-%m-%d")
+    result = execute_read_query("select b.id, first_name, last_name, is_rx, a.score, notes from scores a join athletes b on a.athlete_id = b.id join program c on a.program_id = c.id where c.workout_date = %s", (date,))
+    result = [{'cid' : item[0], 'first_name' : item[1], 'last_name' : item[2], 'is_rx' : item[3], 'score' : item[4], 'notes' : item[5]} for item in result]
+    
     response = app.response_class(
-        response=json.dumps(score_data),
+        response=json.dumps(result),
         status=200,
         mimetype='application/json'
     )
