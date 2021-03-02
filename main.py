@@ -18,15 +18,22 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-con = connect(database='wodapp', user='wodserver')
 
 def execute_read_query(q, params=()):
-    with con.cursor() as cur:
-        cur.execute(q, params)
-        return cur.fetchall()
+    try:
+        con = connect(database='wodapp', user='wodserver')
+        with con.cursor() as cur:
+            cur.execute(q, params)
+            result = cur.fetchall()
+            con.close()
+            return result
+    except Exception as e:
+        app.logger.error(e) 
+        return False
 
 def execute_write_query(q, params=()):
     try:
+        con = connect(database='wodapp', user='wodserver')
         with con.cursor() as cur:
             result = cur.execute(q, params)
             con.commit()
