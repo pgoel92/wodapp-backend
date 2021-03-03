@@ -92,14 +92,16 @@ def wod():
     except Exception:
         date = dt.strftime(dt.now(), "%Y-%m-%d")
 
-    result = execute_read_query("select workout_info from program natural join workouts where workout_date = %s", (date,))
+    result = execute_read_query("select id, workout_id, workout_info from program natural join workouts where workout_date = %s", (date,))
     if result:
-        workout_info = result[0].workout_info 
+        workout_info = result[0].workout_info
+        workout_info['id'] = result[0].workout_id
+        json_response = {'workout' : workout_info, 'id' : result[0].id} 
     else:
-        workout_info = {}
+        json_response = {}
 
     response = app.response_class(
-        response=json.dumps(workout_info),
+        response=json.dumps(json_response),
         status=200,
         mimetype='application/json'
     )
