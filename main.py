@@ -54,8 +54,8 @@ def write_customer_score(data):
     notes = data['notes'] or ''
     scaled_wod = data['scaled_wod']
     is_rx = (scaled_wod == None)
-    print("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, '%s', '%s', %s, '%s')" % (program_id, athlete_id, score, notes, is_rx, json.dumps(scaled_wod)))
-    is_successful = execute_write_query("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, %s, %s, %s, %s)", (program_id, athlete_id, score, notes, is_rx, json.dumps(scaled_wod)))
+    print("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, '%s', '%s', %s, '%s')" % (program_id, athlete_id, json.dumps(score), notes, is_rx, json.dumps(scaled_wod)))
+    is_successful = execute_write_query("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, %s, %s, %s, %s)", (program_id, athlete_id, json.dumps(score), notes, is_rx, json.dumps(scaled_wod)))
     return is_successful
 
 @app.route('/customers/<cid>', methods=['POST'])
@@ -92,7 +92,7 @@ def wod():
     except Exception:
         date = dt.strftime(dt.now(), "%Y-%m-%d")
 
-    result = execute_read_query("select id, workout_id, workout_info from program natural join workouts where workout_date = %s", (date,))
+    result = execute_read_query("select program.id, workout_id, workout_info from program join workouts on program.workout_id = workouts.id where workout_date = %s", (date,))
     if result:
         workout_info = result[0].workout_info
         workout_info['id'] = result[0].workout_id
