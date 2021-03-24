@@ -113,8 +113,8 @@ def scores():
         date = request.args.get('date')
     except Exception:
         date = dt.strftime(dt.now(), "%Y-%m-%d")
-    result = execute_read_query("select b.id, first_name, last_name, is_rx, a.score, notes from scores a join athletes b on a.athlete_id = b.id join program c on a.program_id = c.id where c.workout_date = %s", (date,))
-    result = [{'cid' : item[0], 'first_name' : item[1], 'last_name' : item[2], 'is_rx' : item[3], 'score' : item[4], 'notes' : item[5]} for item in result]
+    result = execute_read_query("select b.id, first_name, last_name, is_rx, a.score, scaled_wod->'type' from scores a join athletes b on a.athlete_id = b.id join program c on a.program_id = c.id where c.workout_date = %s", (date,))
+    result = [{'cid' : item[0], 'first_name' : item[1], 'last_name' : item[2], 'is_rx' : item[3], 'score' : item[4], 'type' : item[5]} for item in result]
     
     response = app.response_class(
         response=json.dumps(result),
