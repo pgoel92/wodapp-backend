@@ -71,6 +71,21 @@ def update(cid):
     )
     return response 
 
+@app.route('/customers/scores')
+def customer_scores():
+    workout_id = request.args.get('workout_id')
+    date = request.args.get('date')
+    result = execute_read_query("select b.id, first_name, last_name, is_rx, a.score, scaled_wod->'type', workout_date from scores a join athletes b on a.athlete_id = b.id join program c on a.program_id = c.id where c.workout_id = %s and c.workout_date < %s", (workout_id, date))
+    print(result)
+    result = [{'cid' : item[0], 'first_name' : item[1], 'last_name' : item[2], 'is_rx' : item[3], 'score' : item[4], 'type' : item[5], 'date' : item[6].strftime('%B %d, %Y')} for item in result]
+    
+    response = app.response_class(
+        response=json.dumps(result),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 @app.route('/athletes')
 def athletes():
     result = execute_read_query("select id, first_name, last_name from athletes")
