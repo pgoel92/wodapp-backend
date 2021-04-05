@@ -138,5 +138,17 @@ def scores():
     )
     return response
 
+@app.route('/workouts')
+def workouts():
+    search_keyword = request.args.get('keyword')
+    result = execute_read_query("select id, workout_info from workouts w, json_array_elements(w.workout_info#>'{round}') obj WHERE obj->>'mov' = %s group by id;", (search_keyword,))
+    
+    response = app.response_class(
+        response=json.dumps(result),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
