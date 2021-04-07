@@ -141,10 +141,15 @@ def scores():
 @app.route('/workouts')
 def workouts():
     search_keyword = request.args.get('keyword')
-    result = execute_read_query("select id, workout_info from workouts w, json_array_elements(w.workout_info#>'{round}') obj WHERE obj->>'mov' = %s group by id;", (search_keyword,))
-    
+    query_result = execute_read_query("select id, workout_info from workouts w, json_array_elements(w.workout_info#>'{round}') obj WHERE obj->>'mov' = %s group by id;", (search_keyword,))
+    results = []
+    for result in query_result:
+        workout_info = result.workout_info
+        workout_info.update({'id' : result.id})
+        results.append(workout_info)
+        
     response = app.response_class(
-        response=json.dumps(result),
+        response=json.dumps(results),
         status=200,
         mimetype='application/json'
     )
