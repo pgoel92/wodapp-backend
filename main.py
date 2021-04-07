@@ -71,6 +71,23 @@ def update(cid):
     )
     return response 
 
+@app.route('/wod', methods=['POST'])
+def set_wod():
+    data = request.json
+    app.logger.info("Setting wod for %s" % json.dumps(data))
+    date = data['date']
+    workout_id = data['id']
+    print("insert into program(workout_id, workout_date) values(%d, %s)" % (workout_id, date))
+    is_successful = execute_write_query("insert into program(workout_id, workout_date) values(%d, %s)", (workout_id, date))
+    
+    status = 201 if is_successful else 500
+    response = app.response_class(
+        response=json.dumps({}),
+        status=status,
+        mimetype='application/json'
+    )
+    return response 
+
 @app.route('/customers/scores')
 def customer_scores():
     workout_id = request.args.get('workout_id')
