@@ -53,7 +53,7 @@ def write_customer_score(data):
     score = data['score']
     notes = data['notes'] or ''
     scaled_wod = data['scaled_wod']
-    is_rx = (scaled_wod == None)
+    is_rx = data['is_rx'] 
     print("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, '%s', '%s', %s, '%s')" % (program_id, athlete_id, json.dumps(score), notes, is_rx, json.dumps(scaled_wod)))
     is_successful = execute_write_query("insert into scores(program_id, athlete_id, score, notes, is_rx, scaled_wod) values(%d, %d, %s, %s, %s, %s)", (program_id, athlete_id, json.dumps(score), notes, is_rx, json.dumps(scaled_wod)))
     return is_successful
