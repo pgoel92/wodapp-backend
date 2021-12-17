@@ -158,7 +158,11 @@ def scores():
 @app.route('/workouts')
 def workouts():
     search_keyword = request.args.get('keyword')
-    query_result = execute_read_query("select id, workout_info from workouts w, json_array_elements(w.workout_info#>'{round}') obj WHERE obj->>'mov' = %s group by id;", (search_keyword,))
+    mode = request.args.get('mode')
+    if mode == 'random':
+        query_result = execute_read_query("select id, workout_info from workouts order by random() limit 7;")
+    else:
+        query_result = execute_read_query("select id, workout_info from workouts w, json_array_elements(w.workout_info#>'{round}') obj WHERE obj->>'mov' = %s group by id;", (search_keyword,))
     results = []
     for result in query_result:
         workout_info = result.workout_info
